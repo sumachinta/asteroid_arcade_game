@@ -4,6 +4,7 @@ from typing import Optional, Tuple, List
 from matplotlib.patches import Wedge, Patch
 from matplotlib.lines import Line2D 
 
+from utils.stimulation import StimConfig
 from utils.encoding import Ship, Asteroid, Threat
 
 def visualize_game(
@@ -87,4 +88,39 @@ def visualize_game(
     ax.set_xlim(x_s - max_dist, x_s + max_dist)
     ax.set_ylim(y_s - max_dist, y_s + max_dist)
 
+    plt.show()
+
+
+def plot_directional_stim(waves, cfg: StimConfig, max_time_s=None):
+    """
+    waves: DirectionalWaveforms(left, center, right)
+    cfg: StimConfig (for sampling rate)
+    max_time_s: optional, plot only first N seconds
+    """
+    # Convert samples → time axis
+    n_samples = len(waves.left)
+    if max_time_s is not None:
+        max_samples = int(max_time_s * cfg.sampling_rate)
+        max_samples = min(max_samples, n_samples)
+    else:
+        max_samples = n_samples
+    
+    t = np.arange(max_samples) / cfg.sampling_rate
+
+    fig, axes = plt.subplots(3, 1, figsize=(6, 5), sharex=True)
+
+    axes[0].plot(t, waves.left[:max_samples], color="red")
+    axes[0].set_title("Left stimulation")
+    # axes[0].set_ylabel("Voltage (V)")
+
+    axes[1].plot(t, waves.center[:max_samples], color="green")
+    axes[1].set_title("Center stimulation")
+    # axes[1].set_ylabel("Voltage (V)")
+
+    axes[2].plot(t, waves.right[:max_samples], color="blue")
+    axes[2].set_title("Right stimulation")
+    # axes[2].set_ylabel("Voltage (V)")
+    axes[2].set_xlabel("Time (s)")
+
+    plt.tight_layout()
     plt.show()
