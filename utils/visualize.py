@@ -4,12 +4,12 @@ from typing import Optional, Tuple, List
 from matplotlib.patches import Wedge, Patch
 from matplotlib.lines import Line2D 
 
-from utils.encoding import Ship, Asteroid
+from utils.encoding import Ship, Asteroid, Threat
 
 def visualize_game(
     ship: "Ship",
     asteroids: List["Asteroid"],
-    d_threat: Optional[Tuple[float, float, float]] = None,
+    d_threat: Optional[Threat] = None,
     max_dist: float = 400.0,
     theta_center_deg: float = 10.0,
 ):
@@ -59,7 +59,7 @@ def visualize_game(
 
     # Threat text 
     if d_threat is not None:
-        d_left, d_center, d_right = d_threat
+        d_left, d_center, d_right = d_threat.left, d_threat.center, d_threat.right
         text = (
             f"Threats:\n"
             f"Left   = {d_left:.2f}\n"

@@ -44,6 +44,11 @@ class Asteroid:
         self.x += self.vx * dt
         self.y += self.vy * dt
 
+@dataclass
+class Threat:
+    left: float
+    center: float
+    right: float
 
 def wrap_angle(angle: float) -> float:
     """
@@ -164,4 +169,4 @@ def compute_directional_threat(
             threat_left = max(threat_left, per_asteroid_threat)
         else:
             threat_center = max(threat_center, per_asteroid_threat)
-    return threat_left, threat_center, threat_right
+    return Threat(left=threat_left, center=threat_center, right=threat_right)
