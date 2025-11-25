@@ -21,10 +21,7 @@ class StimConfig:
         return 1.0 / self.sampling_rate
 
 
-# -----------------------------
-# 2. Single biphasic pulse
-# -----------------------------
-
+# Single biphasic pulse
 def make_biphasic_pulse(cfg: StimConfig) -> np.ndarray:
     """
     Create a single biphasic pulse (+amp then -amp) at the given sampling rate.
@@ -41,10 +38,7 @@ def make_biphasic_pulse(cfg: StimConfig) -> np.ndarray:
     return pulse
 
 
-# ---------------------------------------------
-# 3. Constant-frequency pulse train (1 channel)
-# ---------------------------------------------
-
+# Constant-frequency pulse train for each direction
 def generate_pulse_train_constant_freq(freq_hz: float,
                                        duration_s: float,
                                        cfg: StimConfig) -> np.ndarray:
@@ -72,10 +66,7 @@ def generate_pulse_train_constant_freq(freq_hz: float,
     return signal
 
 
-# --------------------------------------------------------
-# 4. Pulse trains for left / center / right using StimFrequencies
-# --------------------------------------------------------
-
+# Pulse trains for left / center / right using StimFrequencies
 @dataclass
 class DirectionalWaveforms:
     left: np.ndarray
