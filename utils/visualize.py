@@ -91,16 +91,16 @@ def visualize_game(
     plt.show()
 
 
-def plot_directional_stim(waves, cfg: StimConfig, max_time_s=None):
+def plot_directional_stim(waves, cfg: StimConfig, max_duration_s=None):
     """
     waves: DirectionalWaveforms(left, center, right)
     cfg: StimConfig (for sampling rate)
-    max_time_s: optional, plot only first N seconds
+    max_duration_s: optional, plot only first N seconds
     """
     # Convert samples → time axis
     n_samples = len(waves.left)
-    if max_time_s is not None:
-        max_samples = int(max_time_s * cfg.sampling_rate)
+    if max_duration_s is not None:
+        max_samples = int(max_duration_s * cfg.sampling_rate)
         max_samples = min(max_samples, n_samples)
     else:
         max_samples = n_samples
