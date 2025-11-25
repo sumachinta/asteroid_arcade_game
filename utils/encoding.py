@@ -2,6 +2,10 @@ import math
 from typing import List, Dict, Tuple
 from dataclasses import dataclass
 
+F_MIN_Hz = 5.0 # minimum frequency for stimulation
+F_MAX_Hz = 50.0 # maximum frequency for stimulation
+
+
 @dataclass
 class Ship:
     x: float
@@ -46,9 +50,17 @@ class Asteroid:
 
 @dataclass
 class Threat:
-    left: float
-    center: float
-    right: float
+    left: float # Expected to be in [0, 1]
+    center: float 
+    right: float 
+
+
+@dataclass
+class StimFreqs:
+    left_hz: float  # in Hz
+    center_hz: float  
+    right_hz: float  
+
 
 def wrap_angle(angle: float) -> float:
     """
@@ -169,4 +181,23 @@ def compute_directional_threat(
             threat_left = max(threat_left, per_asteroid_threat)
         else:
             threat_center = max(threat_center, per_asteroid_threat)
-    return Threat(left=threat_left, center=threat_center, right=threat_right)
+    return Threat(left=round(threat_left,2), center=round(threat_center,2), right=round(threat_right,2))
+
+
+def map_threat_to_stim_freqs(
+    threat: Threat,
+    f_min_hz: float = F_MIN_Hz,
+    f_max_hz: float = F_MAX_Hz,
+) -> StimFreqs:
+    """
+    Map threat values in [0, 1] to stimulation frequencies in [f_min_hz, f_max_hz].
+    Higher threat → higher frequency.
+    """
+    def map_value(threat_value: float) -> float:
+        return f_min_hz + threat_value * (f_max_hz - f_min_hz)
+
+    left_hz = round(map_value(threat.left))
+    center_hz = round(map_value(threat.center))
+    right_hz = round(map_value(threat.right))
+
+    return StimFreqs(left_hz=left_hz, center_hz=center_hz, right_hz=right_hz)
