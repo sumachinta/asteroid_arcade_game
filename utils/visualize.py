@@ -11,7 +11,7 @@ def visualize_game(
     asteroids: List["Asteroid"],
     d_threat: Optional[Tuple[float, float, float]] = None,
     max_dist: float = 400.0,
-    theta_center_deg: float = 30.0,
+    theta_center_deg: float = 10.0,
 ):
     """
     Visualize the ship, asteroids, and optional directional threats.

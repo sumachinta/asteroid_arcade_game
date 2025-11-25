@@ -57,7 +57,7 @@ def compute_directional_threat(
     asteroids: list[Asteroid],
     max_dist: float,
     max_size: float,
-    theta_center_deg: float = 30.0,
+    theta_center_deg: float = 10.0,
     w_dist: float = 0.5,
     w_speed: float = 0.3,
     w_size: float = 0.2,
