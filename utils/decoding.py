@@ -1,23 +1,12 @@
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
-
+from utils.spikes_simulate import FiringCounts
 
 class Heading(Enum):
     LEFT = "left"
     RIGHT = "right"
     NONE = "none"  # no turn
-
-
-@dataclass
-class FiringCounts:
-    """
-    Spike counts in one 10 ms bin for each decoding group.
-    """
-    left: int     # heading: turn left
-    right: int    # heading: turn right
-    thrust: int   # accelerate
-    shoot: int    # fire
 
 
 @dataclass
@@ -40,14 +29,14 @@ class DecodingConfig:
     bin_duration_s: float = 0.010  # 10 ms
 
     # Heading (turn) thresholds
-    heading_silence_threshold: float = 5.0   # spikes/s total (left + right)
-    heading_diff_threshold: float = 3.0      # spikes/s difference required to pick a side
+    heading_silence_threshold: float = 3.0   # spikes/s total (left + right)
+    heading_diff_threshold: float = 2.0      # spikes/s difference required to pick a side
 
     # Thrust (accelerate) threshold
-    thrust_threshold: float = 5.0            # spikes/s
+    thrust_threshold: float = 3.0            # spikes/s
 
     # Shoot (fire) threshold + cooldown
-    shoot_threshold: float = 8.0             # spikes/s
+    shoot_threshold: float = 2.0             # spikes/s
     shoot_cooldown_s: float = 0.150         # min time between shots in seconds
 
 
