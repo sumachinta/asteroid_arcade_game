@@ -37,15 +37,6 @@ def pick_random_rates(ranges: RandomRateRanges) -> dict:
     }
 
 
-@dataclass
-class SimSpikeTrain:
-    left: np.ndarray
-    right: np.ndarray
-    thrust: np.ndarray
-    shoot: np.ndarray
-    rates: dict = None  # store the actual firing rates used
-
-
 def simulate_step_firing_counts(ranges: RandomRateRanges,
                                 bin_duration_s: float = 0.010) -> FiringCounts:
     """

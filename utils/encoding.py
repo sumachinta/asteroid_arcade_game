@@ -2,6 +2,10 @@ import math
 from typing import List, Dict, Tuple
 from dataclasses import dataclass
 
+
+WORLD_WIDTH  = 800   
+WORLD_HEIGHT = 600
+
 F_MIN_Hz = 5.0 # minimum frequency for stimulation
 F_MAX_Hz = 50.0 # maximum frequency for stimulation
 
@@ -14,21 +18,6 @@ class Ship:
     vy: float
     heading: float  # in radians
 
-    def position(self) -> Tuple[float, float]:
-        return (self.x, self.y)
-    
-    def velocity(self) -> Tuple[float, float]:
-        return (self.vx, self.vy)
-    
-    def update_position(self, dt: float = 0.01) -> None:
-        # Update position based on velocity and time step
-        self.x += self.vx * dt
-        self.y += self.vy * dt
-
-    def set_heading(self, angle: float) -> None:
-        self.heading = angle
-
-
 @dataclass
 class Asteroid:
     x: float
@@ -36,17 +25,6 @@ class Asteroid:
     vx: float
     vy: float
     size: float
-
-    def position(self) -> Tuple[float, float]:
-        return (self.x, self.y)
-    
-    def velocity(self) -> Tuple[float, float]:
-        return (self.vx, self.vy)
-    
-    def update_position(self, dt: float = 0.01) -> None:
-        # Update position based on velocity and time step
-        self.x += self.vx * dt
-        self.y += self.vy * dt
 
 @dataclass
 class Threat:
@@ -61,6 +39,12 @@ class StimFreqs:
     center_hz: float  
     right_hz: float  
 
+@dataclass
+class GameState:
+    ship: Ship
+    asteroids: List[Asteroid]
+    t_s: float = 0.0
+
 
 def wrap_angle(angle: float) -> float:
     """
@@ -68,6 +52,10 @@ def wrap_angle(angle: float) -> float:
     """
     return (angle + math.pi) % (2 * math.pi) - math.pi
 
+def wrap_position(x: float, y: float) -> tuple[float, float]:
+    x = x % WORLD_WIDTH
+    y = y % WORLD_HEIGHT
+    return x, y
 
 def compute_directional_threat(
     ship: Ship,
@@ -78,7 +66,7 @@ def compute_directional_threat(
     w_dist: float = 0.5,
     w_speed: float = 0.3,
     w_size: float = 0.2,
-) -> tuple[float, float, float]:
+) -> Threat:
     """
     Compute maximum threat coming from the left, center, and right directions.
     Returns:
@@ -184,6 +172,50 @@ def compute_directional_threat(
     return Threat(left=round(threat_left,2), center=round(threat_center,2), right=round(threat_right,2))
 
 
+def update_ship(
+    ship: Ship,
+    action,          # your Action dataclass from decoder
+    dt: float,
+    turn_rate_rad_s: float = math.radians(180),  # 180°/s
+    thrust_accel: float = 50.0,
+):
+    # Turn
+    if action.heading.value == "left":
+        ship.heading -= turn_rate_rad_s * dt
+    elif action.heading.value == "right":
+        ship.heading += turn_rate_rad_s * dt
+
+    ship.heading = wrap_angle(ship.heading)
+
+    # Thrust
+    if action.thrust_on:
+        ax = thrust_accel * math.cos(ship.heading)
+        ay = thrust_accel * math.sin(ship.heading)
+    else:
+        ax = ay = 0.0
+
+    # Integrate velocity and position
+    ship.vx += ax * dt
+    ship.vy += ay * dt
+
+    ship.x += ship.vx * dt
+    ship.y += ship.vy * dt
+
+    ship.x, ship.y = wrap_position(ship.x, ship.y)
+
+def update_asteroids(asteroids: List[Asteroid], dt: float):
+    for a in asteroids:
+        a.x += a.vx * dt
+        a.y += a.vy * dt
+        a.x, a.y = wrap_position(a.x, a.y)
+
+
+def update_game_state(state: GameState, action, dt: float):
+    update_ship(state.ship, action, dt)
+    update_asteroids(state.asteroids, dt)
+    state.t_s += dt
+    
+        
 def map_threat_to_stim_freqs(
     threat: Threat,
     f_min_hz: float = F_MIN_Hz,
