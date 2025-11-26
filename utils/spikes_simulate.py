@@ -13,6 +13,16 @@ class RandomRateRanges:
     thrust_range: tuple = (2, 50)
     shoot_range:  tuple = (5, 50)
 
+@dataclass
+class FiringCounts:
+    """
+    Spike counts in one 10 ms bin for each decoding group.
+    """
+    left: int     # heading: turn left
+    right: int    # heading: turn right
+    thrust: int   # accelerate
+    shoot: int    # fire
+
 
 def pick_random_rates(ranges: RandomRateRanges) -> dict:
     """
@@ -26,6 +36,7 @@ def pick_random_rates(ranges: RandomRateRanges) -> dict:
         "shoot":  np.random.uniform(*ranges.shoot_range),
     }
 
+
 @dataclass
 class SimSpikeTrain:
     left: np.ndarray
@@ -35,66 +46,24 @@ class SimSpikeTrain:
     rates: dict = None  # store the actual firing rates used
 
 
-def simulate_spike_trains(duration_s: float,
-                                 ranges: RandomRateRanges,
-                                 sampling_rate: int = 20_000) -> SimSpikeTrain:
+def simulate_step_firing_counts(ranges: RandomRateRanges,
+                                bin_duration_s: float = 0.010) -> FiringCounts:
     """
-    1. Randomly picks Poisson rates within given ranges
-    2. Generates spike trains for left/right/thrust/shoot groups.
+    Simulate Poisson spike COUNTS for a single 10 ms bin, using
+    random firing rates chosen within biologically plausible ranges.
+    This is equivalent to a 20 kHz Poisson train binned to 10 ms.
     """
-    # Step 1 — Sample random firing rates
-    rates = pick_random_rates(ranges)
+    rates = pick_random_rates(ranges)          # Hz
+    # Poisson mean = rate * bin_duration
+    left_spikes   = np.random.poisson(rates["left"]   * bin_duration_s)
+    right_spikes  = np.random.poisson(rates["right"]  * bin_duration_s)
+    thrust_spikes = np.random.poisson(rates["thrust"] * bin_duration_s)
+    shoot_spikes  = np.random.poisson(rates["shoot"]  * bin_duration_s)
 
-    n_samples = int(duration_s * sampling_rate)
-    dt = 1.0 / sampling_rate
-
-    # Poisson spikes: P(spike) = rate * dt
-    def gen(rate):
-        p = rate * dt
-        return (np.random.rand(n_samples) < p).astype(int)
-
-    return SimSpikeTrain(
-        left   = gen(rates["left"]),
-        right  = gen(rates["right"]),
-        thrust = gen(rates["thrust"]),
-        shoot  = gen(rates["shoot"]),
-        rates  = rates,
+    return FiringCounts(
+        left=int(left_spikes),
+        right=int(right_spikes),
+        thrust=int(thrust_spikes),
+        shoot=int(shoot_spikes),
     )
 
-
-@dataclass
-class FiringCounts:
-    """
-    Spike counts in one 10 ms bin for each decoding group.
-    """
-    left: int     # heading: turn left
-    right: int    # heading: turn right
-    thrust: int   # accelerate
-    shoot: int    # fire
-
-
-def bin_spike_trains(trains: SimSpikeTrain,
-                    bin_size_s: float = 0.010,
-                    sampling_rate: int = 20_000) -> List[FiringCounts]:
-    """
-    Bin the simulated spike trains into 10 ms firing counts.
-    """
-    bin_size_samples = int(bin_size_s * sampling_rate)
-    n_samples = len(trains.left)
-    n_bins = n_samples // bin_size_samples
-
-    binned = []
-
-    for b in range(n_bins):
-        start = b * bin_size_samples
-        end   = start + bin_size_samples
-
-        counts = FiringCounts(
-            left   = int(trains.left[start:end].sum()),
-            right  = int(trains.right[start:end].sum()),
-            thrust = int(trains.thrust[start:end].sum()),
-            shoot  = int(trains.shoot[start:end].sum()),
-        )
-        binned.append(counts)
-
-    return binned
