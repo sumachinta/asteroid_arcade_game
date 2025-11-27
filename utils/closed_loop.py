@@ -8,23 +8,21 @@ from utils.encoding import compute_directional_threat
 from utils.game_physics import WORLD_WIDTH, WORLD_HEIGHT, DT, GameState
 from utils.encoding import Ship, Asteroid, Bullet, Threat, StimFreqs
 from utils.encoding import  map_threat_to_stim_freqs
-from utils.decoding import  Action, Heading, NeuralDecoder
+from utils.decoding import  Action, NeuralDecoder
 from utils.spikes_simulate import FiringCounts, simulate_step_firing_counts
 from utils.feedback import FeedbackState, FeedbackMode, FeedbackType, step_feedback, FEEDBACK_MODE_DEFAULT
 from utils.game_physics import update_game_state
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 
 
 
 def make_initial_state() -> GameState:
-    ship = Ship(
-        x=WORLD_WIDTH / 2,
-        y=WORLD_HEIGHT / 2,
-        vx=0.0,
-        vy=0.0,
-        heading=0.0,
-    )
+    ship = Ship(x=400,y=300,vx=0.0,vy=0.0,heading=0.0)
     asteroids = [
-        Asteroid(x=100.0, y=100.0, vx=20.0, vy=15.0, size=30.0),
+        Asteroid(x=100, y=100, vx=200, vy=150, size=30),
+        Asteroid(x=700, y=500, vx=-150, vy=50, size=20),
+        Asteroid(x=400, y=50, vx=0, vy=20, size=10),
     ]
     return GameState(ship=ship, asteroids=asteroids, bullets=[], t_s=0.0)
 
@@ -46,7 +44,7 @@ def run_simulation(num_steps: int,
     for step in range(num_steps):
         print(f"\n=== STEP {step}, t={state.t_s:.3f} s ===")
 
-        # ----- 1. Encoding: threat -> stim freqs (if not paused) -----
+        # Encoding: threat -> stim freqs (if not paused) 
         if sensory_pause_remaining <= 0.0:
             threat = compute_directional_threat(ship=state.ship,asteroids=state.asteroids,max_size=max_size)
             stim_freqs = map_threat_to_stim_freqs(threat)
@@ -55,16 +53,16 @@ def run_simulation(num_steps: int,
         else:
             print(f"Sensory encoding PAUSED for {sensory_pause_remaining:.3f} s")
 
-        # ----- 2. Simulated spikes for this 10 ms -----
-        counts = simulate_step_firing_counts(bin_duration_s=DT)
-        print("Firing counts:", counts)
+        # Simulated spikes from BNN for this 10 ms 
+        spike_counts = simulate_step_firing_counts(bin_duration_s=DT)
+        print("Firing counts:", spike_counts)
 
-        # ----- 3. Decode -> Action -----
+        # Decode -> Action 
         t_bin_end = state.t_s + DT
-        action = decoder.step(counts, t_bin_end)
+        action = decoder.step(spike_counts, t_bin_end)
         print("Action:", action)
 
-        # ----- 4. Physics + hit/kill detection -----
+        # Physics + hit/kill detection 
         hit, kill = update_game_state(state, action, DT)
         print("Hit:", hit, "Kill:", kill)
         print(
@@ -73,10 +71,8 @@ def run_simulation(num_steps: int,
             f"heading_deg={math.degrees(state.ship.heading):.1f}"
         )
 
-        # ----- 5. Feedback -----
-        fb_type, pause_s, reset_game = step_feedback(
-            feedback_mode, fb_state, hit, kill, DT
-        )
+        # Feedback 
+        fb_type, pause_s, reset_game = step_feedback(feedback_mode, fb_state, hit, kill, DT)
         print("Feedback:", fb_type, "pause_sensory:", pause_s, "reset_game:", reset_game)
 
         # In real experiment, here you'd trigger reward/punishment stimulation
@@ -199,8 +195,6 @@ def run_simulation_record(
     return history
 
 
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
 
 def _draw_ship(ax, ship: Ship):
     """Draw the ship as a small oriented triangle."""
