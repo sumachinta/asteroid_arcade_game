@@ -5,7 +5,6 @@ from utils.game_physics import Ship, Asteroid, Bullet
 from utils.game_physics import wrap_angle
 
 MAX_DISTANCE = 400.0  # for threat computation
-DT = 0.010  # 10 ms bin / game step
 
 F_MIN_Hz = 5.0 # minimum frequency for stimulation
 F_MAX_Hz = 50.0 # maximum frequency for stimulation

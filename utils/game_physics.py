@@ -8,6 +8,8 @@ WORLD_HEIGHT = 600
 
 SHIP_RADIUS = 10.0
 BULLET_RADIUS = 3.0
+BULLET_MAX_AGE_S = 3.0  # seconds
+DT = 0.010  # 10 ms bin / game step
 
 @dataclass
 class Ship:
@@ -24,6 +26,7 @@ class Asteroid:
     vx: float
     vy: float
     size: float
+    alive: bool = True
 
 @dataclass
 class Bullet:
@@ -32,6 +35,7 @@ class Bullet:
     vx: float
     vy: float
     alive: bool = True
+    age_s: float = 0.0  # how long the bullet has existed
 
 @dataclass
 class GameState:
@@ -63,11 +67,9 @@ def spawn_bullet(ship: Ship, bullet_speed: float = 200.0) -> Bullet:
     """ Create a bullet at the ship's position, moving in the ship's heading direction."""
     vx = bullet_speed * math.cos(ship.heading)
     vy = bullet_speed * math.sin(ship.heading)
-    return Bullet(x=ship.x, y=ship.y, vx=vx, vy=vy, alive=True)
+    return Bullet(x=ship.x, y=ship.y, vx=vx, vy=vy, alive=True, age_s=0.0)
 
-def update_ship(ship: Ship,
-                action: Action,          
-                dt: float,
+def update_ship(ship: Ship, action: Action, dt: float,
                 turn_rate_rad_s: float = math.radians(180),  # 180°/s
                 thrust_accel: float = 50.0):
     # Turn
@@ -96,17 +98,30 @@ def update_ship(ship: Ship,
 
 def update_asteroids(asteroids: List[Asteroid], dt: float):
     for a in asteroids:
+        if not a.alive:
+            continue
         a.x += a.vx * dt
         a.y += a.vy * dt
         a.x, a.y = wrap_position(a.x, a.y)
+    asteroids[:] = [a for a in asteroids if a.alive]
 
 def update_bullets(bullets: List[Bullet], dt: float):
+    """
+    Move bullets, wrap positions, age them, and mark as dead
+    once they exceed BULLET_MAX_AGE_S.
+    """
     for b in bullets:
         if not b.alive:
             continue
         b.x += b.vx * dt
         b.y += b.vy * dt
         b.x, b.y = wrap_position(b.x, b.y)
+
+        # Age bullet and kill after max lifetime
+        b.age_s += dt
+        if b.age_s >= BULLET_MAX_AGE_S:
+            b.alive = False
+    bullets[:] = [b for b in bullets if b.alive]
 
 
 def detect_hits_and_kills(state: GameState) -> Tuple[bool, bool]:
@@ -115,8 +130,9 @@ def detect_hits_and_kills(state: GameState) -> Tuple[bool, bool]:
 
     # Ship–asteroid collisions
     for a in state.asteroids:
-        if circle_collision(state.ship.x, state.ship.y, SHIP_RADIUS,
-                            a.x, a.y, a.size):
+        if not a.alive:
+            continue
+        if circle_collision(state.ship.x, state.ship.y, SHIP_RADIUS, a.x, a.y, a.size):
             hit = True
             break
 
@@ -125,12 +141,16 @@ def detect_hits_and_kills(state: GameState) -> Tuple[bool, bool]:
         if not b.alive:
             continue
         for a in state.asteroids:
-            if circle_collision(b.x, b.y, BULLET_RADIUS,
-                                a.x, a.y, a.size):
+            if not a.alive:
+                continue
+            if circle_collision(b.x, b.y, BULLET_RADIUS, a.x, a.y, a.size):
                 kill = True
-                # you could mark b.alive=False, a.size=0 here to remove
+                a.alive = False
+                b.alive = False
                 break
-
+            
+    state.asteroids = [a for a in state.asteroids if a.alive]
+    state.bullets   = [b for b in state.bullets   if b.alive]
     return hit, kill
 
 def update_game_state(state: GameState, action: Action, dt: float):
