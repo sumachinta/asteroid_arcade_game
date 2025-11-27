@@ -37,7 +37,7 @@ def pick_random_rates(ranges: RandomRateRanges) -> dict:
     }
 
 
-def simulate_step_firing_counts(ranges: RandomRateRanges,
+def simulate_step_firing_counts(ranges: RandomRateRanges = RandomRateRanges(),
                                 bin_duration_s: float = 0.010) -> FiringCounts:
     """
     Simulate Poisson spike COUNTS for a single 10 ms bin, using
@@ -45,16 +45,15 @@ def simulate_step_firing_counts(ranges: RandomRateRanges,
     This is equivalent to a 20 kHz Poisson train binned to 10 ms.
     """
     rates = pick_random_rates(ranges)          # Hz
-    # Poisson mean = rate * bin_duration
-    left_spikes   = np.random.poisson(rates["left"]   * bin_duration_s)
-    right_spikes  = np.random.poisson(rates["right"]  * bin_duration_s)
-    thrust_spikes = np.random.poisson(rates["thrust"] * bin_duration_s)
-    shoot_spikes  = np.random.poisson(rates["shoot"]  * bin_duration_s)
+   
+    def poisson_spikes(rate_hz):
+         # Poisson mean = rate * bin_duration
+        return int(np.random.poisson(rate_hz * bin_duration_s))
 
     return FiringCounts(
-        left=int(left_spikes),
-        right=int(right_spikes),
-        thrust=int(thrust_spikes),
-        shoot=int(shoot_spikes),
+        left=poisson_spikes(rates["left"]),
+        right=poisson_spikes(rates["right"]),
+        thrust=poisson_spikes(rates["thrust"]),
+        shoot=poisson_spikes(rates["shoot"]),
     )
 

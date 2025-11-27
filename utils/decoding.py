@@ -37,7 +37,7 @@ class DecodingConfig:
 
     # Shoot (fire) threshold + cooldown
     shoot_threshold: float = 2.0             # spikes/s
-    shoot_cooldown_s: float = 0.150         # min time between shots in seconds
+    # shoot_cooldown_s: float = 0.150         # min time between shots in seconds
 
 
 @dataclass
@@ -80,7 +80,6 @@ class NeuralDecoder:
         self.cfg = config or DecodingConfig()
         self.state = DecoderState()
 
-    # Heading (turn left/right/none) 
 
     def decode_heading(self, r_left: float, r_right: float) -> Heading:
         """
@@ -103,15 +102,12 @@ class NeuralDecoder:
             # Similar activity: don't twitch for tiny differences
             return Heading.NONE
 
-    # Thrust (accelerate or not) 
-
     def decode_thrust(self, r_thrust: float) -> bool:
         """
         Binary decision for acceleration based on a single group.
         """
         return r_thrust > self.cfg.thrust_threshold
 
-    # Shoot (fire or not, with cooldown) 
 
     def decode_shoot(self, r_shoot: float, t_s: float) -> bool:
         """
@@ -123,15 +119,13 @@ class NeuralDecoder:
         if r_shoot <= cfg.shoot_threshold:
             return False
 
-        # Check cooldown
-        if (t_s - self.state.last_shot_time_s) < cfg.shoot_cooldown_s:
-            return False
+        # # Check cooldown
+        # if (t_s - self.state.last_shot_time_s) < cfg.shoot_cooldown_s:
+        #     return False
 
         # Approve a shot and update last_shot_time
         self.state.last_shot_time_s = t_s
         return True
-
-    # 1 full decoding step
 
     def step(self, counts: FiringCounts, t_s: float) -> Action:
         """
