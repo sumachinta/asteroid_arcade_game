@@ -8,7 +8,7 @@ WORLD_HEIGHT = 600
 
 SHIP_RADIUS = 10.0
 BULLET_RADIUS = 3.0
-BULLET_MAX_AGE_S = 3.0  # seconds
+BULLET_MAX_AGE_S = 1.5  # seconds
 DT = 0.010  # 10 ms bin / game step
 
 @dataclass
